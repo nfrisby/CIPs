@@ -89,10 +89,12 @@ None of these tags --- even the original Byron block tag --- have ever influence
 
 ## Follow-Up Change: Transactions
 
-Removing the HFC wrapper from transactions is an improvement in two ways.
+Removing the HFC wrapper from transactions is an improvement in a few ways.
 - Just as today's HFC tags leak implementation details into the codecs, today's `cardano-cli` command-line interface leaks those same implementation details by forcing the user to pick the HFC tag for their transaction.
   (This is not apparent as a burden for users today, since there's essentially only one CLI interface for Cardano.)
 - As explained in the "Follow-Up Change: Backwards-Compatibility Conversions" bullet above, the node doesn't actually need an HFC wrapper for incoming transactions: the current state of the mempool determines which protocol version to use when decoding the bytes of the incoming transaction.
+- It would simplify the specification for submitting transactions.
+  Some users have written their own code to do so, and some have reported [difficulties](https://github.com/IntersectMBO/ouroboros-consensus/issues/137).
 
 If the Ledger Team does accidentally leave ambiguity among the codecs of two adjacent protocol versions, then there would be a risk of misinterpreting a submitted transaction near a protocol version boundary.
 Even today, however, that (unlikely) risk instead motivates a dedicated new field specifying the intended protocol versions that is within the scope of the transaction's signature to prevent the adversary from tampering---the HFC wrapper itself is the wrong approach to mitigating that risk, since it's not signed.
@@ -105,12 +107,14 @@ Even today, however, that (unlikely) risk instead motivates a dedicated new fiel
     - switches on the protocol version instead of switching on some abstraction of the protocol version,
     - stores annotations alongside their persisted blocks with that same protocol version instead of some abstraction thereof,
     - and disallows HFC wrappers for submitted transactions.
-- All nodes also maintain the older codecs for backwards-compatibility for at least one year (TODO what duration to require here?).
+- All nodes also maintain the older codecs for backwards-compatibility for at least one year or until the next hard fork, whichever comes first.
+  Beware: if the next hard fork comes soon after this CIP is implemented, then all node implementations would be forced to implement this CIP before being able to follow that hard fork, since the negotiated handshake versions fully sequentialize _all_ major changes to the node's messages across _all_ node implementations (TODO same concern re-raised in the next section).
 
 ## Implementation Plan
 
 Each node implementation team would implement this CIP in their own node.
-Because all implementations currently constrain the single integer negotiatied as of the node's handshake, every implementation would need to deploy this change in a release at approximately the same time, which could be difficult to arrange seamlessly.
+Because all implementations currently constrain the single integer negotiatied as of the node's handshake, whichever value of that integer is assigned to this CIP's changes would mean that a node implementation would be forced to implement this CIP before negotiating any greater version.
+Therefore subsequent features that require greater handshake versions would be blocked by the implementation of this CIP, once it is assigned to a value of that integer.
 (TODO has this challenge already been explicitly called out anywhere?
 Perhaps we should branch the negotated version so that it "knows" about different implementations?
 That doesn't sound sustainable either...)
