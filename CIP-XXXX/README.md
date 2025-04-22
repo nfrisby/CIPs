@@ -67,13 +67,19 @@ Using other values for the HFC tag would either be excessively granular or be so
 Today's HFC values are such an abstraction, but not necessarily a fundamental one that every node implementations would necessarily have independently decided upon.
 Even if every node implementation did choose to use the same sum type as today's node does, the codec specification itself can be much simpler if it doesn't have to refer to/motivate that sum type.
 
-One apparent alternative choice would be to remove the HFC wrapper entirely.
-However, this would reduce modularity.
-Because the HFC wrapper controls the prefix all of the node's codecs, the wrapped Byron and Shelley codecs can exist completely independently from each other---the HFC wrapper completely disambiguates them.
-The same is true for the later hard forks to Allegra, Mary, Alonzo, and so on: each one is assigned a unique value for the HFC tag.
-While the wrapper allows the wrapped codecs to be independent, it doesn't force them to be.
-Codecs are still free to share code, which has been useful and reasonable for all the relatively-incremental changes that hvae been made since the big Byron-to-Shelley hard fork.
-But a big change in the future (perhaps Ouroboros Leios?) might benefit from the independence the HFC wrapper ensures.
+One apparent alternative design choice would be to remove the HFC wrapper entirely, just send the block's bytes directly.
+This has at least the following negative consequences.
+- Around hard forks, the node needs to be able to decode both kinds of blocks.
+  So either every block format must begin with the block's prev-hash and slot at the beginning of its bytes (which is necessarily enough information to determine the block's protocol version), or else the node would need to attempt to decode using its current ledger state's protocol version and then backtrack to the next and/or previous protocol version.
+- It would reduce modularity.
+  Because the HFC wrapper controls the prefix all of the node's codecs, the wrapped Byron and Shelley codecs can exist completely independently from each other.
+  The HFC wrapper completely disambiguates them, so there is no risk whatsoever of one being misinterpreted as the other.
+  The same is true for the later hard forks to Allegra, Mary, Alonzo, and so on: each one is assigned a unique value for the HFC tag.
+  While the wrapper allows the wrapped codecs to be independent, it doesn't force them to be.
+  Codecs are still free to share code, which has been useful and reasonable for all the relatively-incremental changes that hvae been made since the big Byron-to-Shelley hard fork.
+  But a big change in the future (perhaps Ouroboros Leios?) might benefit from the independence the HFC wrapper ensures.
+
+One redundant and eventually-checked integer in the prefix of the codec seems worthwhile to fully prevent those downsides.
 
 ## Follow-Up Change: Storage Layer
 
